@@ -41,9 +41,11 @@ class Command(BaseCommand):
                 if verbosity > 1: print "Executing '%s'" % ' '.join(cmd)
 
                 start = datetime.datetime.now()
+                end = start + settings.MAX_ITEM_LENGTH
+
                 p = subprocess.Popen(cmd)
                 while p.poll() is None:
-                    if datetime.datetime.now() > start + datetime.timedelta(minutes=5):
+                    if datetime.datetime.now() > end:
                         if verbosity > 1: print "Killing mplayer after timeout"
                         os.kill(p.pid, signal.SIGHUP)
                     time.sleep(1)

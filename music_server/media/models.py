@@ -6,7 +6,7 @@ from django.db import connection
 from django.conf import settings
 from django.contrib.auth.models import User
 
-from music_server.managers import UnplayedItemManager
+from music_server.media.managers import UnplayedItemManager
 
 FILENAME_PAT = re.compile(r'[^ -.a-zA-Z0-9_]')
 
@@ -27,7 +27,7 @@ class Item(models.Model):
     file = models.FileField(upload_to=upload_filename)
     ip = models.IPAddressField()
     state = models.CharField(max_length=1, choices=CHOICES, default='q')
-    added = models.DateTimeField(auto_now_add=True, null=True)
+    added = models.DateTimeField(default=datetime.datetime.now)
 
     objects = models.Manager()
     unplayed = UnplayedItemManager()
@@ -51,29 +51,29 @@ class Item(models.Model):
     def save(self, *args, **kwargs):
         if self.id:
             super(Item, self).save()
-        else:
-            try:
-                self.lock_table()
+            return
 
-                try:
-                    self.bucket = Item.objects.exclude(state='x').order_by('bucket').values_list('bucket', flat=True)[0]
-                    while True:
-                        if not Item.objects.filter(user=self.user, bucket=self.bucket).count():
-                            break
-                        self.bucket += 1
+        try:
+            # Find lowest bucket to insert into
+            self.bucket = Item.unplayed.order_by('bucket'). \
+                values_list('bucket', flat=True)[0]
 
-                except IndexError:
-                    self.bucket = 1
+            while True:
+                if not Item.objects.filter(user=self.user, bucket=self.bucket).count():
+                    break
+                self.bucket += 1
 
-                try:
-                    self.pos = Item.objects.filter(bucket=self.bucket).order_by('-pos').values_list('pos', flat=True)[0] + 1
-                except IndexError:
-                    self.pos = 1
+        except IndexError:
+            self.bucket = 1
 
-                super(Item, self).save()
+        try:
+            # Find highest position to insert into
+            self.pos = Item.objects.filter(bucket=self.bucket).order_by('-pos'). \
+                values_list('pos', flat=True)[0] + 1
+        except IndexError:
+            self.pos = 1
 
-            finally:
-                self.unlock_table()
+        super(Item, self).save()
 
     def str_filename(self):
         try:
@@ -84,40 +84,28 @@ class Item(models.Model):
 
     def move_up(self):
         try:
-            try:
-                self.lock_table()
-                other = Item.objects.filter(bucket__lt=self.bucket, user=self.user, state='q').order_by('-bucket')[0]
-                self._swap(self, other)
-                return other
-            except IndexError:
-                # Don't allow item to arbitrarily move up a bucket
-                pass
-        finally:
-            self.unlock_table()
+            other = Item.objects.filter(bucket__lt=self.bucket, user=self.user, state='q'). \
+                order_by('-bucket')[0]
+            self._swap(self, other)
+            return other
+        except IndexError:
+            # Don't allow item to arbitrarily move up a bucket
+            pass
 
     def move_down(self):
         try:
+            other = Item.objects.filter(bucket__gt=self.bucket, user=self.user, state='q'). \
+                order_by('bucket')[0]
+            self._swap(self, other)
+            return other
+        except IndexError:
             try:
-                self.lock_table()
-                other = Item.objects.filter(bucket__gt=self.bucket, user=self.user, state='q').order_by('bucket')[0]
-                self._swap(self, other)
-                return other
+                max_bucket = Item.objects.all().order_by('-bucket'). \
+                    values_list('bucket', flat=True)[0]
+                self.bucket = min(self.bucket + 1, max_bucket)
+                self.save()
             except IndexError:
-                try:
-                    max_bucket = Item.objects.all().order_by('-bucket').values_list('bucket', flat=True)[0]
-                    self.bucket = min(self.bucket + 1, max_bucket)
-                    self.save()
-                except IndexError:
-                    pass
-        finally:
-            self.unlock_table()
-
-    def delete(self):
-        try:
-            self.lock_table()
-            super(Item, self).delete()
-        finally:
-            self.unlock_table()
+                pass
 
     @classmethod
     def _swap(cls, item_1, item_2):
@@ -142,23 +130,11 @@ class Item(models.Model):
         item_2.pos = item_1_pos
         item_2.save()
 
-    @classmethod
-    def lock_table(cls):
-        return
-        if not settings.DATABASE_ENGINE.startswith('sqlite'):
-            cursor = connection.cursor()
-            cursor.execute('LOCK TABLES %s WRITE' % cls._meta.db_table)
-
-    @classmethod
-    def unlock_table(cls):
-        return
-        if not settings.DATABASE_ENGINE.startswith('sqlite'):
-            cursor = connection.cursor()
-            cursor.execute('UNLOCK TABLES')
-
+"""
 class Blackball(models.Model):
     user = models.ForeignKey(User)
     item = models.ForeignKey(Item)
+"""
 
 class YouTubeQueue(models.Model):
     CHOICES = (
