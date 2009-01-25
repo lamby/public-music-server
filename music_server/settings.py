@@ -7,13 +7,11 @@ USE_I18N = True
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.load_template_source',
     'django.template.loaders.app_directories.load_template_source',
-#     'django.template.loaders.eggs.load_template_source',
 )
 
 MIDDLEWARE_CLASSES = (
+    'music_server.middleware.MACAuthenticationMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
 
 ROOT_URLCONF = 'music_server.urls'
@@ -32,6 +30,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'music_server',
+    'music_server.media',
+    'music_server.profile',
 )
 
 LOGIN_REDIRECT_URL = '/'
