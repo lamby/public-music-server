@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Setup profile{% endblock %}
+
+{% block content %}
+
+<h2>Welcome to the music server..</h2>
+
+<p>To use the music server, you will need to configure a display name.</p>
+
+<p>This is specific to the computer you are viewing this, based on their MAC address.</p>
+
+<form method="post" action="{% url setup-profile %}">
+	{{ setup_form }}
+	<input type="submit" value="Continue &raquo;"/>
+</form>
+
+{% endblock %}

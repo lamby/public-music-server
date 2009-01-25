@@ -21,21 +21,11 @@
 </div>
 
 <div id="current">
-
-  {% if user.is_authenticated %}
-
-    Logged in as <strong>{{ user }}</strong>
+    Logged in as <strong><em>{{ user.profile }}</em></strong>
     <small>
     <a href="{% url index %}">Home</a> -
-    <a href="{% url youtube %}">YouTube</a> -
-    <a href="{% url logout %}">Logout</a>
+    <a href="{% url youtube %}">YouTube queue</a>
     </small>
-
-	{% else %}
-
-	  <a href="{% url register %}">Register</a> or <a href="{% url login %}">Login</a>
-
-	{% endif %}
 </div>
 
 <div id="content">{% block content %}{% endblock %}</div>
@@ -44,9 +34,8 @@
 
 <div id="contact">
 	<a href="http://chris-lamb.co.uk/"><img src="/site_media/img/by-lamby.png" alt="By Lamby"/></a>
-	<!-- Powered by <a href="http://git.
-<h2>5 last failed URIs</h2>chris-lamb.co.uk/?p=mytab.git">MyTab</a>. --> Copyright &copy; 2008 <a href="http://chris-lamb.co.uk/">Chris Lamb</a>. Design by <a href="http://www.modernlifeisrubbish.co.uk/">Stuart Brown</a>.
-	<!-- <br/>Released under the GNU Affero General Public License v3.0+. <a href="">Download.</a> -->
+	Powered by <a href="http://git.chris-lamb.co.uk/?p=music-server.git">Music Server</a>. Copyright &copy; 2008&ndash;2009 <a href="http://chris-lamb.co.uk/">Chris Lamb</a>. Design by <a href="http://www.modernlifeisrubbish.co.uk/">Stuart Brown</a>.
+	<br/>Released under the GNU Affero General Public License v3.0+.
 
 </div>
 
